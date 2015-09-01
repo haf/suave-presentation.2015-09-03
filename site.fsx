@@ -34,7 +34,7 @@ let logManager =
 let suaveConfig =
   { defaultConfig with
       logger = SuaveAdapter(logManager.GetLogger "Suave")
-      homeFolder = Some (Path.GetFullPath "public/") }
+      homeFolder = Some (Path.GetFullPath "build/public/") }
 
 startWebServer suaveConfig <|
   choose [
