@@ -11,3 +11,6 @@
 
 Ensure we can serve index.html
 
+ 1. add Suave, FSharp.Core, Logary.Adapters.Suave to paket.dependencies
+ 1. paket install
+ 1. echo packages/ >>.gitignore
