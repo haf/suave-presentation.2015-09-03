@@ -33,3 +33,4 @@ Ensure we can run ReactJS+RxJS+react-router contents in browser
  1. create react structure with router
  1. create first js page
  1. ensure index.html is in build folder
+ 1. 

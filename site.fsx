@@ -1,5 +1,6 @@
-#!/usr/bin/env fsharpi
+#!/usr/bin/env fsharpi --noframework
 // for Suave
+#r "packages/FSharp.Core/lib/net40/FSharp.Core.dll"
 #r "packages/Suave/lib/net40/Suave.dll"
 
 // for Logary (v3.x)
