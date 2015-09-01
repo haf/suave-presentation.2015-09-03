@@ -5,6 +5,7 @@
   "main": "js/index.js",
   "private": true,
   "scripts": {
+    "install": "mkdir -p ../build/public && cp index.html ../build/public && webpack --progress -d --colors --config webpack-dev.config.js",
     "start": "mkdir -p ../build/public && cp index.html ../build/public && webpack --watch --progress -d --colors --config webpack-dev.config.js",
     "lint": "node node_modules/eslint/bin/eslint.js js"
   },
