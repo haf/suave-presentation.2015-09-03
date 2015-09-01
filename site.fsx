@@ -10,6 +10,7 @@
 #r "packages/Logary/lib/net40/Logary.dll"
 #r "packages/Logary.Adapters.Suave/lib/net40/Logary.Adapters.Suave.dll"
 
+open System.IO
 open Suave
 open Suave.Types
 open Suave.Web
@@ -33,7 +34,7 @@ let logManager =
 let suaveConfig =
   { defaultConfig with
       logger = SuaveAdapter(logManager.GetLogger "Suave")
-      homeFolder = Some "public/" }
+      homeFolder = Some (Path.GetFullPath "public/") }
 
 startWebServer suaveConfig <|
   choose [
