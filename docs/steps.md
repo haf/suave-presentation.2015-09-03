@@ -20,7 +20,12 @@ Ensure we can serve index.html
   1. configure logging
  1. chmod +x site.fsx
  1. ./site.fsx
- 1. curl http://localhost:8083
+ 1. curl http://localhost:8083/
  1. default to sending index.html, from homeFolder
- 1. curl -> won't work
+ 1. curl -> won't work:
  1. ensure homeFolder is absolute (security measure)
+ 1. curl -> works. for any string path.
+
+Ensure we can run ReactJS contents in browser
+
+ 1. create webpack.config.js
