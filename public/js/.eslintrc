@@ -1,0 +1,49 @@
+{
+  "parser": "babel-eslint",
+  "rules": {
+    "eol-last": 0,
+    "no-unused-expressions": 1,
+    "no-unused-vars": 1,
+    "strict": 0,
+    "new-cap": 0,
+    "camelcase": 0,
+    "react/jsx-uses-react": 1,
+    "rules": 0,
+    "no-multi-spaces": 0,
+    "no-shadow": 0,
+    "quotes": 0,
+    "no-use-before-define": [2, "nofunc"],
+    "comma-dangle": 0,
+    "key-spacing": 0,
+    "no-underscore-dangle": 0,
+    "curly": 0,
+    "no-unused-vars": 0,
+    "no-extend-native": [2, {"exceptions": ["Array", "String"]}]
+  },
+  "ecmaFeatures": {
+    "jsx": true,
+    "arrowFunctions": true,
+    "blockBindings": true,
+    "classes": true,
+    "defaultParams": true,
+    "destructuring": true,
+    "forOf": true,
+    "generators": true,
+    "modules": true,
+    "spread": true,
+    "templateStrings": true
+  },
+  "env": {
+    "browser": true,
+    "node": false,
+    "es6": true,
+    "amd": true
+  },
+  "globals": {
+    "BROWSER": true,
+    "module": true
+  },
+  "plugins": [
+    "react"
+  ]
+}
