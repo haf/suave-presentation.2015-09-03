@@ -6,8 +6,8 @@
 // for Logary (v3.x)
 #I "packages/Newtonsoft.Json/lib/net45/"
 #I "packages/FSharp.Actor-logary/lib/net40/"
-#I "packages/NodaTime/lib/net35-client/"
-#r "packages/NodaTime/lib/net35-client/NodaTime.dll"
+#I "packages/NodaTime/lib/net35-Client/"
+#r "packages/NodaTime/lib/net35-Client/NodaTime.dll"
 #r "packages/Logary/lib/net40/Logary.dll"
 #r "packages/Logary.Adapters.Suave/lib/net40/Logary.Adapters.Suave.dll"
 
