@@ -14,6 +14,7 @@ open Suave
 open Suave.Types
 open Suave.Web
 open Suave.Http
+open Suave.Http.Applicatives
 open Suave.Http.Successful
 open Logary
 open Logary.Targets
@@ -31,6 +32,13 @@ let logManager =
 
 let suaveConfig =
   { defaultConfig with
-      logger = SuaveAdapter(logManager.GetLogger "Suave") }
+      logger = SuaveAdapter(logManager.GetLogger "Suave")
+      homeFolder = Some "public/" }
 
-startWebServer suaveConfig (OK "Hello World!")
+startWebServer suaveConfig <|
+  choose [
+    path "/hello" >>= OK "Hello World!"
+    Files.browseHome // first see if you find the file in requested
+    Files.browseFileHome "index.html" // always serve index.html by default
+    ServerErrors.INTERNAL_ERROR "Please place your index.html in the right folder"
+  ]
