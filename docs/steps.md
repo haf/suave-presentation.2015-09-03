@@ -26,6 +26,8 @@ Ensure we can serve index.html
  1. ensure homeFolder is absolute (security measure)
  1. curl -> works. for any string path.
 
-Ensure we can run ReactJS contents in browser
+Ensure we can run ReactJS+RxJS+react-router contents in browser
 
  1. create webpack.config.js
+ 1. create react structure with router
+ 1. create first js page

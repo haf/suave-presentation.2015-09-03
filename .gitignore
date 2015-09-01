@@ -1,3 +1,4 @@
 paket.exe
 node_modules/
 packages/
+npm-debug.log
