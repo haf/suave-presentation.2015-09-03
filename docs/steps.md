@@ -23,3 +23,4 @@ Ensure we can serve index.html
  1. curl http://localhost:8083
  1. default to sending index.html, from homeFolder
  1. curl -> won't work
+ 1. ensure homeFolder is absolute (security measure)
