@@ -1,15 +1,17 @@
 import React from 'react';
-// read up on this here
+// read up on how RxJS works here:
 // https://xgrommx.github.io/rx-book/
 import Rx from 'rx';
 import RxReact from 'rx-react';
 import Timer from './timer';
 import mui from 'material-ui';
+import sha1 from 'simple-sha1';
 
 const {
   Styles,
   TextField,
-  RaisedButton
+  RaisedButton,
+  Paper
 } = mui;
 
 const {
@@ -17,37 +19,17 @@ const {
   StateStreamMixin
 } = RxReact;
 
+const _ = require('./underscore.rx')(require('./underscore'));
 
-const ChatLog = React.createClass({
-  render() {
-    const { items } = this.props;
-    return (
-      <ul>{items.map((itemText, index) =>
-        <li key={index + itemText}>{itemText}</li>
-      )}</ul>
-    );
-  }
-});
-
-const ChatView = React.createClass({
-  render() {
-    return <div>
-      <ChatLog />
-      <TextField hintText="Write your chat message here!"
-                 floatingLabelText="Tell it like it is!" />
-      <RaisedButton label="Send" primary={true} />
-    </div>
-  }
-});
+///////////////////////
+// First View – Name //
+///////////////////////
 
 const NameView = (function() {
   const handleChange = FuncSubject.create(),
-
         handleSubmit = FuncSubject.create(),
-
         inputValueStream = handleChange.map(e => e.target.value).startWith(''),
-
-        textStream = inputValueStream.merge(handleSubmit.map(''));
+        textStream       = inputValueStream.merge(handleSubmit.map(''));
 
   return React.createClass({
     mixins: [
@@ -58,7 +40,7 @@ const NameView = (function() {
       handleSubmit.subscribe(evt => {
         evt.preventDefault();
         if (this.props.handleName) {
-          this.props.handleName.onNext(this.state.name);
+          this.props.handleName(this.state.name);
         }
       });
 
@@ -72,6 +54,7 @@ const NameView = (function() {
           <TextField onChange={handleChange}
                      value={this.state.name}
                      hintText="Your Name in the Chat" />
+
           <RaisedButton label="Smooth!"
                         type="submit"
                         primary={true} />
@@ -81,48 +64,123 @@ const NameView = (function() {
   });
 })();
 
+////////////////////////
+// Second View – Chat //
+////////////////////////
+
+// subcomponent of ChatView
+const ChatLog = React.createClass({
+  render() {
+    const { messages } = this.props;
+    return <Paper zDepth={1}>
+      <ul className="chat-log">{messages.map((dto, index) =>
+        <li key={index + dto.messageId}>{dto.message}</li>
+      )}</ul>
+    </Paper>;
+  }
+});
+
+const createChatMessage = function(userName, message) {
+  let ts = _.now();
+  return {
+    userName: userName,
+    message: message,
+    timestamp: ts,
+    messageId: sha1.sync(message + "\n" + ts)
+  };
+};
+
+// the view where you chat
+const ChatView = (function() {
+  const handleSubmit = FuncSubject.create(),
+        handleTyping = FuncSubject.create();
+
+  return React.createClass({
+    mixins: [
+      StateStreamMixin
+    ],
+
+    getStateStream() {
+      const submitStream = handleSubmit.publish(),
+            typedValueStream = handleTyping.map(e => e.target.value).startWith(''),
+            typedTextStream = typedValueStream.merge(submitStream.map(''));
+
+      handleSubmit.subscribe(e => e.preventDefault())
+
+      submitStream
+        .withLatestFrom(
+          typedValueStream,
+          (evt, message) => createChatMessage(this.props.userName, message))
+        .subscribe(this.props.handleSays);
+
+      submitStream.connect();
+
+      return typedTextStream.map(x => ({ typedText: x }));
+    },
+
+    render() {
+      const { userName, messages } = this.props,
+            { typedText } = this.state;
+
+      return <form onSubmit={handleSubmit}>
+        <ChatLog messages={messages} />
+
+        <TextField hintText={userName + " says..."}
+                   floatingLabelText="Tell it like it is!"
+                   onChange={handleTyping}
+                   value={typedText} />
+
+        <RaisedButton label="Say."
+                      primary={true}
+                      type="submit" />
+      </form>
+    }
+  });
+})();
+
+///////////////////////////////////
+// The ChatApp (composing above) //
+///////////////////////////////////
+
+// the 'main' application component that deals with input-output to
+// the server
 let ChatApp = (function() {
-  const onChange = FuncSubject.create();
+  const handleName = FuncSubject.create(),
+        handleSays = FuncSubject.create(),
+        nameStream = handleName.startWith(''),
+        viewStream = handleName.map('chat').startWith('name');
 
-  const handleSubmit =
-    FuncSubject.create(e => e.preventDefault());
-
-  const inputValueStream =
-    onChange.map(e => e.target.value).startWith('');
-
-  const itemsStream =
-    handleSubmit
-      .withLatestFrom(inputValueStream, (_, text) => text )
-      .scan((items, text) => items.concat(text), [])
-      .startWith([]);
-
-  const viewStream =
-    handleSubmit
-      .map('')
-      .startWith('name');
-
-  const stateStream =
-    Rx.Observable.combineLatest(
-      viewStream,
-      itemsStream,
-      (view, items) => ({view, items}));
-
-  const getStateStream = function () {
-    return stateStream;
-  };
-
-  const render = function() {
-    return this.state.view === 'name'
-      ? <NameView />
-      : <ChatView items={this.state.items} />;
-  };
+  const messagesStream =
+    Rx.Observable.from([[
+      createChatMessage('haf', 'sayz it like it izz')
+    ]]);
 
   return React.createClass({
     mixins: [StateStreamMixin],
-    render,
-    getStateStream
+
+    getStateStream() {
+      messagesStream.subscribe(console.debug.bind(console, 'messages'));
+      handleSays.subscribe(console.debug.bind(console, 'says'));
+
+      return Rx.Observable.combineLatest(
+        nameStream, viewStream, messagesStream,
+        (userName, view, messages) => ({userName, view, messages}));
+    },
+
+    render() {
+      const { userName, view, messages } = this.state;
+      return view === 'name'
+        ? <NameView handleName={handleName} />
+        : <ChatView messages={messages}
+                    userName={userName}
+                    handleSays={handleSays}/>;
+    }
   });
 })();
+
+////////////////////////
+// boilerplate below: //
+////////////////////////
 
 let App = (function() {
   let injectTapEventPlugin = require("react-tap-event-plugin");

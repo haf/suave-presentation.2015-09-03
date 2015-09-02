@@ -29,6 +29,7 @@
     "react-tap-event-plugin": "^0.1.7",
     "rx": "^3.1.2",
     "rx-react": "^0.2.1",
+    "simple-sha1": "^2.0.7",
     "transducers-js": "^0.4.174"
   },
   "devDependencies": {
