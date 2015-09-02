@@ -26,10 +26,18 @@ Ensure we can serve index.html
  1. ensure homeFolder is absolute (security measure)
  1. curl -> works. for any string path.
 
-Ensure we can run ReactJS+RxJS+react-router contents in browser
+Ensure we can run ReactJS+RxJS contents in browser
 
- 1. create webpack.config.js
- 1. create .eslintrc
- 1. create react structure with router
- 1. create first js page
- 1. ensure index.html is in build folder
+ 1. Create webpack.config.js
+ 1. Create .eslintrc
+ 1. Create react structure with router
+ 1. Create first js page
+ 1. Ensure index.html is in build folder
+
+Fix chat basics
+
+ 1. Create app, the two views and the components
+ 1. Stub GET /api/chat/messages
+ 1. Stub POST /api/chat/send
+ 1. Stub GET /api/chat/subscribe
+

@@ -19,6 +19,7 @@ open Suave.Web
 open Suave.Http
 open Suave.Http.Applicatives
 open Suave.Http.Successful
+open Suave.Http.Writers
 open Logary
 open Logary.Targets
 open Logary.Suave
@@ -38,9 +39,17 @@ let suaveConfig =
       logger = SuaveAdapter(logManager.GetLogger "Suave")
       homeFolder = Some (Path.GetFullPath "build/public/") }
 
+module Chat =
+  let api =
+    setMimeType "application/json; charset=utf-8" >>= choose [
+      path "/api/chat/send" >>= OK "\"Hello World!\""
+      path "/api/chat/messages" >>= OK "[]"
+      path "/api/chat/subscribe" >>= OK "TODO"
+    ]
+
 startWebServer suaveConfig <|
   choose [
-    path "/hello" >>= OK "Hello World!"
+    Chat.api
     Files.browseHome // first see if you find the file in requested
     Files.browseFileHome "index.html" // always serve index.html by default
     ServerErrors.INTERNAL_ERROR "Please place your index.html in the right folder"
