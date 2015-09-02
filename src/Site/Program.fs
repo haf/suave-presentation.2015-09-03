@@ -11,7 +11,9 @@
 #r "packages/Logary/lib/net40/Logary.dll"
 #r "packages/Logary.Adapters.Suave/lib/net40/Logary.Adapters.Suave.dll"
 #endif
+module McStreamy
 
+open System
 open System.IO
 open Suave
 open Suave.Types
@@ -69,6 +71,11 @@ module Chat =
         *> Json.write "timestamp" (sprintf "%O" m.timestamp)
         *> Json.write "messageId" m.messageId
 
+    type ControlFlow =
+      | Retry
+      static member ToJson (c : ControlFlow) : Json<unit> =
+        Lens.Json.setLensPartial Json.StringPLens "retry"
+
   open DTOs
 
   let stubMessages = [
@@ -79,44 +86,87 @@ module Chat =
   module HubAndSpoke =
     open Suave.Tcp
     open Suave.Sockets
+    open Suave.Sockets.Control
+    open Hopac
+    open Hopac.Stream
+    open Hopac.Infixes // this tends to overwrite >>= from Suave
+    open Hopac.Alt.Infixes
+    open Hopac.Extensions
+
+    let private logger = Logging.getLoggerByName "McStreamy.Chat.HubAndSpoke"
 
     type Op =
-      | Message of Message
-      | AddClient of string
-      | RemoveClient of string
+      | Broadcast of Message
 
-    //type T = T of Ch
+    type T<'Msg> = T of cmds:Ch<'Msg> * multicast:Stream<Message>
+
+    let broadcast (T (cmdChan, _)) (msg : Message) =
+      cmdChan <-- Broadcast msg |> queue
 
     let create () =
-      // let cmdChan = ch ()
+      let cmdChan = ch ()
+      let history = Src.create ()
       let rec server state =
         job {
-          let! msg = cmdChan |> Ch.recv
+          let! msg = Ch.take cmdChan
           match msg with
-          | Message msg ->
-            do! stream |> Stream.cons msg
-            return! server state
-          | AddClient client ->
-            return! server state
-          | RemoveClient client ->
+          | Broadcast msg ->
+            do! msg |> Src.value history
             return! server state
         }
-      server cmdChan [] // |> queue
-      cmdChan
+      server [] |> Job.server |> queue
+      T (cmdChan, Stream.Src.tap history)
 
-    let subscribe hub conn =
-      socket {
-        return ""
+    let subscribe (T (_, multicast)) =
+      let rec loop (streamPos : Promise<Cons<_>>) (conn : Connection) = socket {
+        let! next =
+          streamPos
+          |> Promise.read
+          |> Async.Global.ofJob
+          |> SocketOp.ofAsync
+
+        match next with
+        | Nil ->
+          LogLine.create' Info "no more log messages" |> Logger.log logger
+          return () // close socket
+        | Cons (msg, xs') ->
+          let msgJson = msg |> Json.serialize |> Json.format
+          do! EventSource.mkMessage msg.messageId msgJson |> EventSource.send conn
+          return! loop xs' conn
       }
+      loop multicast
+
+    let history (T (_, multicast)) =
+      multicast
+      |> Stream.foldFromFun [] (fun xs x -> x :: xs)
+      |> Job.map List.rev
+
+    // You can do timeouts like such:
+    //timeOut (TimeSpan.FromDays 1.) >>%? Error "no chat messages received for a day"
+
+  module Utils =
+    open Hopac
+
+    let inline deserialise (fn : 'a -> WebPart) : WebPart =
+      request (fun r ->
+        r.rawForm
+        |> Suave.Utils.UTF8.toString
+        |> Json.parse
+        |> Json.deserialize
+        |> fn)
 
   let api =
+    // Single static global hub for this process; not load balanced.
+    // To support distr. system, add e.g. Raft/Viewstamped-Replicated-Log, let it
+    // ACK before ACK-ing to client, appending to multicast stream.
     let hub = HubAndSpoke.create ()
 
     setMimeType "application/json; charset=utf-8" >>= choose [
-      path "/api/chat/send" >>= OK "\"Hello World!\""
+      path "/api/chat/send" >>= Utils.deserialise (HubAndSpoke.broadcast hub >> (fun _ -> CREATED "\"ACK\""))
       path "/api/chat/messages" >>= OK (stubMessages |> Json.serialize |> Json.format)
       path "/api/chat/subscribe" >>= EventSource.handShake (HubAndSpoke.subscribe hub)
     ]
+    // >>= fun ctx -> async { let! msgs = HubAndSpoke.history hub in return! OK (json msgs) ctx }
 
 startWebServer suaveConfig <|
   choose [

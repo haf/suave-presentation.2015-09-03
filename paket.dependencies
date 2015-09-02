@@ -2,6 +2,7 @@ source https://nuget.org/api/v2
 framework = net45
 
 nuget Chiron
+nuget Hopac
 nuget NodaTime
 nuget Suave
 nuget Logary.Adapters.Suave
