@@ -7,21 +7,23 @@ var Timer = React.createClass({
     StateStreamMixin
   ],
 
-  getInitialState() { return {}; },
+  getInitialState() {
+    return {
+      secondsElapsed: 0
+    };
+  },
 
   getStateStream() {
     return Rx.Observable.interval(1000).map(function (interval) {
       return {
-        secondsElapsed: interval
+        secondsElapsed: (interval + 1)
       };
     });
   },
 
   render() {
     var secondsElapsed = this.state ? this.state.secondsElapsed : 0;
-    return (
-      <div>Seconds Elapsed: {secondsElapsed}</div>
-    );
+    return <div>Seconds Elapsed: {secondsElapsed}s</div>;
   }
 });
 
