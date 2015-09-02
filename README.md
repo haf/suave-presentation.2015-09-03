@@ -11,6 +11,7 @@ npm start
 Other console:
 
 ```
-./site.fsx
+xbuild src/Site.sln
+mono src/Site/bin/Debug/Site.exe
 open http://localhost:8083
 ```

@@ -1,3 +1,4 @@
+#if INTERACTIVE
 #!/usr/bin/env fsharpi
 // for Suave
 #r "packages/Suave/lib/net40/Suave.dll"
@@ -9,6 +10,7 @@
 #r "packages/NodaTime/lib/net35-Client/NodaTime.dll"
 #r "packages/Logary/lib/net40/Logary.dll"
 #r "packages/Logary.Adapters.Suave/lib/net40/Logary.Adapters.Suave.dll"
+#endif
 
 open System.IO
 open Suave

@@ -1,0 +1,12 @@
+﻿<Properties StartupItem="Site/Site.fsproj">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|AnyCPU" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Site/Program.fs">
+    <Files>
+      <File FileName="Site/Program.fs" Line="12" Column="32" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>

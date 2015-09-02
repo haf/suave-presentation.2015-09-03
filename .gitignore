@@ -3,3 +3,5 @@ node_modules/
 packages/
 npm-debug.log
 build/
+bin/
+obj/
