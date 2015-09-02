@@ -73,9 +73,10 @@ const ChatLog = React.createClass({
   render() {
     const { messages } = this.props;
     return <Paper zDepth={1}>
-      <ul className="chat-log">{messages.map((dto, index) =>
-        <li key={index + dto.messageId}>{dto.message}</li>
-      )}</ul>
+      <dl className="chat-log">{messages.map((dto, index) =>
+        [<dt key={"dt" + index + dto.messageId} className="metadata">{dto.userName}</dt>,
+         <dd key={"dd" + index + dto.messageId} className="message">{dto.message}</dd>]
+      )}</dl>
     </Paper>;
   }
 });

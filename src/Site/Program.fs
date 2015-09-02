@@ -40,11 +40,82 @@ let suaveConfig =
       homeFolder = Some (Path.GetFullPath "build/public/") }
 
 module Chat =
+  open Chiron
+  open NodaTime
+
+  module DTOs =
+    open Chiron.Operators // this tends to overwrite >>= from Suave
+
+    type Message =
+      { userName : string
+        message : string
+        timestamp : Instant
+        messageId : string }
+
+      static member FromJson (_ : Message) =
+        (fun user msg ts mid ->
+          { userName = user 
+            message  = msg
+            timestamp = NodaTime.Text.InstantPattern.GeneralPattern.Parse(ts).Value
+            messageId = mid })
+        <!> Json.read "userName"
+        <*> Json.read "message"
+        <*> Json.read "timestamp"
+        <*> Json.read "messageId"
+
+      static member ToJson (m : Message) =
+        Json.write "userName" m.userName
+        *> Json.write "message" m.message
+        *> Json.write "timestamp" (sprintf "%O" m.timestamp)
+        *> Json.write "messageId" m.messageId
+
+  open DTOs
+
+  let stubMessages = [
+    { userName = "haf"; message = "Hej tomtegubbar slå i glasen"; timestamp = SystemClock.Instance.Now; messageId = "sha1hash" }
+    { userName = "ademar"; message = "w00t does that mean??"; timestamp = SystemClock.Instance.Now.PlusTicks(1L); messageId = "sha1hash" }
+  ]
+
+  module HubAndSpoke =
+    open Suave.Tcp
+    open Suave.Sockets
+
+    type Op =
+      | Message of Message
+      | AddClient of string
+      | RemoveClient of string
+
+    //type T = T of Ch
+
+    let create () =
+      // let cmdChan = ch ()
+      let rec server state =
+        job {
+          let! msg = cmdChan |> Ch.recv
+          match msg with
+          | Message msg ->
+            do! stream |> Stream.cons msg
+            return! server state
+          | AddClient client ->
+            return! server state
+          | RemoveClient client ->
+            return! server state
+        }
+      server cmdChan [] // |> queue
+      cmdChan
+
+    let subscribe hub conn =
+      socket {
+        return ""
+      }
+
   let api =
+    let hub = HubAndSpoke.create ()
+
     setMimeType "application/json; charset=utf-8" >>= choose [
       path "/api/chat/send" >>= OK "\"Hello World!\""
-      path "/api/chat/messages" >>= OK "[]"
-      path "/api/chat/subscribe" >>= OK "TODO"
+      path "/api/chat/messages" >>= OK (stubMessages |> Json.serialize |> Json.format)
+      path "/api/chat/subscribe" >>= EventSource.handShake (HubAndSpoke.subscribe hub)
     ]
 
 startWebServer suaveConfig <|

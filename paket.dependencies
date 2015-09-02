@@ -1,6 +1,8 @@
 source https://nuget.org/api/v2
 framework = net45
 
+nuget Chiron
+nuget NodaTime
 nuget Suave
 nuget Logary.Adapters.Suave
 nuget FSharp.Core
