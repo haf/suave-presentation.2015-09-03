@@ -58,7 +58,7 @@ module Chat =
         (fun user msg ts mid ->
           { userName = user 
             message  = msg
-            timestamp = NodaTime.Text.InstantPattern.GeneralPattern.Parse(ts).Value
+            timestamp = NodaTime.Text.InstantPattern.ExtendedIsoPattern.Parse(ts).Value
             messageId = mid })
         <!> Json.read "userName"
         <*> Json.read "message"
@@ -166,7 +166,9 @@ module Chat =
           do! EventSource.mkMessage msg.messageId msgJson |> EventSource.send conn
           return! loop xs' conn
       }
-      loop (Stream.Src.tap messages)
+      loop (Stream.Src.tap messages) // |> Stream.values)
+      // TODO: https://github.com/haf/suave-presentation.2015-09-03/commit/037422a38b4d528b1e5e7acb7319809ed9edf028#commitcomment-13043991
+      // GET ../subscribe still returns ALL previous events
 
     let history (T (inChan, _)) =
       Alt.guard (

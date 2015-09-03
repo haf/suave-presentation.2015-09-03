@@ -106,7 +106,7 @@ const ChatView = (function() {
             typedValueStream = handleTyping.map(e => e.target.value).startWith(''),
             typedTextStream = typedValueStream.merge(submitStream.map(''));
 
-      handleSubmit.subscribe(e => e.preventDefault())
+      submitStream.subscribe(e => e.preventDefault())
 
       submitStream
         .withLatestFrom(
@@ -147,21 +147,41 @@ const ChatView = (function() {
 // the server
 let ChatApp = (function() {
   const handleName = FuncSubject.create(),
-        handleSays = FuncSubject.create(),
-        nameStream = handleName.startWith(''),
-        viewStream = handleName.map('chat').startWith('name');
+        handleSays = FuncSubject.create();
 
-  const messagesStream =
-    Rx.Observable.from([[
-      createChatMessage('haf', 'sayz it like it izz')
-    ]]);
+  handleSays
+    .tap(console.log.bind(console, 'handleSays'))
+    .subscribe(msg => {
+      let apiMsg = _.merge(msg, { timestamp: new Date(msg.timestamp).toISOString() });
+      _.request('POST', '/api/chat/send', apiMsg).retry(10)
+        // need to subscribe to trigger send
+        .subscribe(console.log.bind(console, '/api/chat/send'));
+    });
 
   return React.createClass({
     mixins: [StateStreamMixin],
 
     getStateStream() {
-      messagesStream.subscribe(console.debug.bind(console, 'messages'));
-      handleSays.subscribe(console.debug.bind(console, 'says'));
+      const nameStream = handleName.startWith(''),
+            viewStream = handleName.map('chat').startWith('name'),
+            // stub:
+            // Rx.Observable.from([[createChatMessage('haf', 'sayz it like it izz') ]]);
+            messagesReq =
+              _.requestJSON('/api/chat/messages')
+                .retry(3)
+                .startWith([])
+                .tap(console.log.bind(console, 'messages')),
+
+            messagesStream =
+              Rx.Observable.concat(
+                messagesReq,
+                _.requestESJSON('/api/chat/subscribe')
+                  .retry(3)
+                  .tap(console.log.bind(console, 'subscribe'))
+                  .scan((acc, msg) => {
+                    acc.push(msg);
+                    return acc;
+                  }, []));
 
       return Rx.Observable.combineLatest(
         nameStream, viewStream, messagesStream,

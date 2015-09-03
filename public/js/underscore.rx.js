@@ -1,6 +1,7 @@
 import Rx from 'rx';
 
-let _ = {};
+const _ = {},
+      root = window;
 
 /**
  * Creates an observable for an Ajax request with either a settings object with url, headers, etc or a string for a URL.
@@ -36,13 +37,12 @@ let _ = {};
  *    xhr: xhr,
  *    originalEvent: e
  *  };
- *   - interceptors: an arrayish of interceptors that can change the options
+ *   - interceptors: an arrayish of interceptors that can change the opts
  *     before it's sent, signature Settings -> Settings
  *
  * @returns {Observable} An observable sequence containing the XMLHttpRequest.
  */
 _.request = (function() {
-  let root = document;
 
   // Gets the proper XMLHttpRequest for support for older IE
   function getXMLHttpRequest() {
@@ -98,24 +98,29 @@ _.request = (function() {
     originalEvent: e
   });
 
-  return function (method, resource, data, options) {
-    let s =
-      (options.interceptors || [])
-      .reduce((settings, fn) => fn(settings),
-              _.merge({
-                async: true,
-                crossDomain: false,
-                createXHR: crossDomain => crossDomain ? getCORSRequest() : getXMLHttpRequest(),
-                headers: {},
-                normaliseError: normaliseAjaxErrorEvent,
-                normaliseSuccess: normaliseAjaxSuccessEvent,
-                responseType: 'json',
-                progressObserver: null
-              }, options, {
-                method: method,
-                url: (/^https?:\/\//i.test(resource) ? resource : (window.location.origin + resource)),
-                data: data
-              }));
+  const requestFn = function (method, resource, data, opts = {}) {
+    const
+      dataInterceptors = requestFn.dataInterceptors.concat(opts.dataInterceptors || []),
+      merged = [
+        opts,
+        {
+          method: method,
+          url: (/^https?:\/\//i.test(resource) ? resource : (root.location.origin + resource)),
+          data: requestFn.dataInterceptors.reduce((st, f) => f(data), data)
+        }
+      ].reduce(_.merge, {
+        async: true,
+        crossDomain: false,
+        createXHR: crossDomain => crossDomain ? getCORSRequest() : getXMLHttpRequest(),
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8'
+        },
+        normaliseError: normaliseAjaxErrorEvent,
+        normaliseSuccess: normaliseAjaxSuccessEvent,
+        responseType: 'json',
+        progressObserver: null
+      }),
+      s = (opts.interceptors || []).reduce((settings, fn) => fn(settings), merged)
 
     return new Rx.AnonymousObservable(function (observer) {
       let isDone = false,
@@ -198,10 +203,21 @@ _.request = (function() {
       };
     });
   };
+
+  const ctorOf = Function.prototype.call.bind(Object.prototype.toString);
+
+  requestFn.dataInterceptors = [
+    // stringify plain objects to JSON
+    data => ctorOf(data) === "[object Object]"
+              ? JSON.stringify(data)
+              : data
+    ];
+
+  return requestFn;
 })();
 
-_.requestJSON = (url, data, options) =>
-  _.request('GET', url, data, options).map(x => x.response);
+_.requestJSON = (resource, data, opts) =>
+  _.request('GET', resource, data, opts).map(x => x.response);
 
 /**
  * Intercept the request with the given function,
@@ -251,4 +267,10 @@ _.requestES = function (url, openObserver) {
   });
 };
 
-export default underscore => Object.assign(underscore, _);
+_.requestESJSON = (resource) =>
+  _.requestES(resource).map(x => JSON.parse(x.data));
+
+export default underscore => {
+  Object.assign(_, underscore);
+  return _;
+};
