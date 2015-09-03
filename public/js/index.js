@@ -186,10 +186,10 @@ let ChatApp = (function() {
               Rx.Observable.concat(
                 rs,
                 rs.flatMapObserver(initial => {
-                  console.log('obs');
+                  //console.log('obs');
                   return messagesSub
                     .scan((acc, msg) => {
-                      console.log('in scan', initial, acc, msg);
+                      //console.log('in scan', initial, acc, msg);
                       acc.push(msg);
                       return acc;
                     }, initial);

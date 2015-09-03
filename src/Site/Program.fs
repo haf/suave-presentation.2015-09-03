@@ -37,9 +37,14 @@ let logManager =
     ])
 
 let suaveConfig =
+  let port =
+    match Environment.GetEnvironmentVariable("PORT") with
+    | null -> 8080us
+    | strPort -> uint16 strPort
   { defaultConfig with
       logger = SuaveAdapter(logManager.GetLogger "Suave")
-      homeFolder = Some (Path.GetFullPath "build/public/") }
+      homeFolder = Some (Path.GetFullPath "build/public/")
+      bindings = [ HttpBinding.mk HTTP (System.Net.IPAddress.Any) port ] }
 
 module Chat =
   open Chiron
