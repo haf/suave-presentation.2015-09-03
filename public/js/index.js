@@ -170,18 +170,31 @@ let ChatApp = (function() {
               _.requestJSON('/api/chat/messages')
                 .retry(3)
                 .startWith([])
-                .tap(console.log.bind(console, 'messages')),
+                .tap(console.log.bind(console, 'messages'))
+                .doOnCompleted(() => console.log('/messages completed')),
 
-            messagesStream =
+            messagesSub =
+              _.requestESJSON('/api/chat/subscribe')
+                .retry(3)
+                .tap(console.log.bind(console, 'subscribe'));
+
+      var rs = new Rx.ReplaySubject(1);
+      messagesReq.subscribe(rs);
+      // that only took 1h: https://stackoverflow.com/questions/32378301/rxjs-bind-observable
+
+      const messagesStream =
               Rx.Observable.concat(
-                messagesReq,
-                _.requestESJSON('/api/chat/subscribe')
-                  .retry(3)
-                  .tap(console.log.bind(console, 'subscribe'))
-                  .scan((acc, msg) => {
-                    acc.push(msg);
-                    return acc;
-                  }, []));
+                rs,
+                rs.flatMapObserver(initial => {
+                  console.log('obs');
+                  return messagesSub
+                    .scan((acc, msg) => {
+                      console.log('in scan', initial, acc, msg);
+                      acc.push(msg);
+                      return acc;
+                    }, initial);
+                }, () =>  Rx.Observable.empty(), () => Rx.Observable.empty()))
+              .startWith([]);
 
       return Rx.Observable.combineLatest(
         nameStream, viewStream, messagesStream,

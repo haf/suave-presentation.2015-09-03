@@ -149,26 +149,25 @@ module Chat =
       server (History.create 40000us) |> Job.server |> queue
       T (cmdChan, messages)
 
-    let subscribe (T (_, messages)) =
-      let rec loop (streamPos : Promise<Cons<_>>) (conn : Connection) = socket {
-        let! next =
-          streamPos
-          |> Promise.read
-          |> Async.Global.ofJob
-          |> SocketOp.ofAsync // noteworthy: this will hold the socket open until there's a message
+    let subscribe (T (_, messages)) : Connection -> SocketOp<_> =
+      fun conn ->
+        let rec loop (streamPos : Promise<Cons<_>>) = socket {
+          let! next =
+            streamPos
+            |> Promise.read
+            |> Async.Global.ofJob
+            |> SocketOp.ofAsync // noteworthy: this will hold the socket open until there's a message
 
-        match next with
-        | Nil ->
-          LogLine.create' Info "no more log messages" |> Logger.log logger
-          return () // close socket
-        | Cons (msg, xs') ->
-          let msgJson = msg |> Json.serialize |> Json.format
-          do! EventSource.mkMessage msg.messageId msgJson |> EventSource.send conn
-          return! loop xs' conn
-      }
-      loop (Stream.Src.tap messages) // |> Stream.values)
-      // TODO: https://github.com/haf/suave-presentation.2015-09-03/commit/037422a38b4d528b1e5e7acb7319809ed9edf028#commitcomment-13043991
-      // GET ../subscribe still returns ALL previous events
+          match next with
+          | Nil ->
+            LogLine.create' Info "no more log messages" |> Logger.log logger
+            return () // close socket
+          | Cons (msg, xs') ->
+            let msgJson = msg |> Json.serialize |> Json.format
+            do! EventSource.mkMessage msg.messageId msgJson |> EventSource.send conn
+            return! loop xs'
+        }
+        loop (Stream.Src.tap messages)
 
     let history (T (inChan, _)) =
       Alt.guard (
