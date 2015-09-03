@@ -41,3 +41,10 @@ Fix chat basics
  1. Stub POST /api/chat/send
  1. Stub GET /api/chat/subscribe
 
+Fix chat server proper
+
+curl http://127.0.0.1:8083/api/chat/subscribe
+curl -X POST --header "Content-Type: application/json; charset=utf-8" -d @sample2.json http://127.0.0.1:8083/api/chat/send
+curl -X POST -i --header "Content-Type: application/json; charset=utf-8" -d @sample.json http://127.0.0.1:8083/api/chat/send
+curl -X GET http://127.0.0.1:8083/api/chat/messages | jq .
+
