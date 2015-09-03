@@ -48,3 +48,6 @@ curl -X POST --header "Content-Type: application/json; charset=utf-8" -d @sample
 curl -X POST -i --header "Content-Type: application/json; charset=utf-8" -d @sample.json http://127.0.0.1:8083/api/chat/send
 curl -X GET http://127.0.0.1:8083/api/chat/messages | jq .
 
+Fix chat client
+
+Enable deployments
