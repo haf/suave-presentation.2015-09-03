@@ -219,5 +219,6 @@ startWebServer suaveConfig <|
     Chat.api
     Files.browseHome // first see if you find the file in requested
     Files.browseFileHome "index.html" // always serve index.html by default
-    ServerErrors.INTERNAL_ERROR "Please place your index.html in the right folder"
+    ServerErrors.INTERNAL_ERROR (sprintf "Please place your index.html in %s" 
+                                         (suaveConfig.homeFolder |> Option.fold (fun s t -> t) "[not configured]"))
   ]
